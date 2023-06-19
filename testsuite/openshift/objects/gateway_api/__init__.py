@@ -47,7 +47,7 @@ class HTTPRoute(OpenShiftObject, Referencable, Route):
     ):
         """Creates new instance of HTTPRoute"""
         model = {
-            "apiVersion": "gateway.networking.k8s.io/v1alpha2",
+            "apiVersion": "gateway.networking.k8s.io/v1beta1",
             "kind": "HTTPRoute",
             "metadata": {"name": name, "namespace": openshift.project, "labels": labels},
             "spec": {
