@@ -96,7 +96,7 @@ class MGCGateway(KuadrantGateway):
             labels["cluster.open-cluster-management.io/placement"] = placement
 
         instance = super(MGCGateway, cls).create_instance(openshift, name, hostname, labels)
-        instance.model.spec.gatewayClassName = gateway_class
+        instance.model.spec.gatewayClassName = "istio"
         if tls:
             instance.model.spec.listeners = [
                 {
@@ -138,13 +138,14 @@ class MGCGateway(KuadrantGateway):
         Returns spoke gateway on an arbitrary, and sometimes, random spoke cluster.
         Works only for GW deployed on Hub
         """
-        self.refresh()
-        cluster_name = json.loads(self.model.metadata.annotations["kuadrant.io/gateway-clusters"])[0]
-        spoke_client = spokes[cluster_name]
-        prefix = "kuadrant"
-        spoke_client = spoke_client.change_project(f"{prefix}-{self.namespace()}")
-        with spoke_client.context:
-            return oc.selector(f"gateway/{self.name()}").object(cls=self.__class__)
+        return self
+        # self.refresh()
+        # cluster_name = json.loads(self.model.metadata.annotations["kuadrant.io/gateway-clusters"])[0]
+        # spoke_client = spokes[cluster_name]
+        # prefix = "kuadrant"
+        # spoke_client = spoke_client.change_project(f"{prefix}-{self.namespace()}")
+        # with spoke_client.context:
+        #     return oc.selector(f"gateway/{self.name()}").object(cls=self.__class__)
 
     @property
     def cert_secret_name(self):
