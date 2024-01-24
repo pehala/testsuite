@@ -40,13 +40,25 @@ all-is-package:
 testsuite/%: FORCE poetry-no-dev
 	$(PYTEST) --performance --mgc -v $(flags) $@
 
-test: ## Run tests
+test: ## Run all non mgc tests
 test pytest tests: poetry-no-dev
-	$(PYTEST) -n4 -m 'not flaky' --dist loadfile $(flags) testsuite
+	$(PYTEST) -n4 -m 'not mgc' --dist loadfile $(flags) testsuite
 
-authorino: ## Run test
+authorino: ## Run only authorino related tests
 authorino: poetry-no-dev
-	$(PYTEST) -n4 -m 'not flaky' --dist loadfile $(flags) testsuite/tests/kuadrant/authorino
+	$(PYTEST) -n4 -m 'authorino' --dist loadfile --enforce $(flags) testsuite
+
+authorino-standalone: ## Run only test capable of running with standalone Authorino
+authorino-standalone: poetry-no-dev
+	$(PYTEST) -n4 -m 'authorino and not kuadrant' --dist loadfile --enforce $(flags) testsuite/tests/kuadrant/authorino
+
+limitador: ## Run only Limitador related tests
+limitador: poetry-no-dev
+	$(PYTEST) -n4 -m 'limitador' --dist loadfile --enforce $(flags) testsuite
+
+kuadrant: ## Run Kuadrant-only tests
+kuadrant: poetry-no-dev
+	$(PYTEST) -n4 -m 'kuadrant' --dist loadfile --enforce $(flags) testsuite
 
 performance: ## Run performance tests
 performance: poetry-no-dev
@@ -54,7 +66,7 @@ performance: poetry-no-dev
 
 mgc: ## Run mgc tests
 mgc: poetry-no-dev
-	$(PYTEST) --mgc $(flags) testsuite/tests/mgc
+	$(PYTEST) -m "mgc" $(flags) testsuite
 
 poetry.lock: pyproject.toml
 	poetry lock
