@@ -24,17 +24,6 @@ MESSAGE_1KB = resources.files("testsuite.resources.performance.files").joinpath(
 JSONValues = None | str | int | bool | list["JSONValues"] | dict[str, "JSONValues"]
 
 
-class Singleton(type):
-    """Metaclass for creating Singletons"""
-
-    def __init__(cls, name, bases, mmbs):
-        super().__init__(name, bases, mmbs)
-        cls._instance = super().__call__()
-
-    def __call__(cls, *args, **kw):
-        return cls._instance
-
-
 class ContentType(enum.Enum):
     """Content-type options for expectation headers"""
 

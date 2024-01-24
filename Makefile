@@ -38,7 +38,7 @@ all-is-package:
 
 # pattern to run individual testfile or all testfiles in directory
 testsuite/%: FORCE poetry-no-dev
-	$(PYTEST) --performance --mgc -v $(flags) $@
+	$(PYTEST) --performance -v $(flags) $@
 
 test: ## Run all non mgc tests
 test pytest tests: poetry-no-dev
@@ -50,7 +50,7 @@ authorino: poetry-no-dev
 
 authorino-standalone: ## Run only test capable of running with standalone Authorino
 authorino-standalone: poetry-no-dev
-	$(PYTEST) -n4 -m 'authorino and not kuadrant' --dist loadfile --enforce $(flags) testsuite/tests/kuadrant/authorino
+	$(PYTEST) -n4 -m 'authorino and not kuadrant_only' --dist loadfile --enforce $(flags) testsuite/tests/kuadrant/authorino
 
 limitador: ## Run only Limitador related tests
 limitador: poetry-no-dev
@@ -58,7 +58,7 @@ limitador: poetry-no-dev
 
 kuadrant: ## Run Kuadrant-only tests
 kuadrant: poetry-no-dev
-	$(PYTEST) -n4 -m 'kuadrant' --dist loadfile --enforce $(flags) testsuite
+	$(PYTEST) -n4 -m 'kuadrant_only' --dist loadfile --enforce $(flags) testsuite
 
 performance: ## Run performance tests
 performance: poetry-no-dev

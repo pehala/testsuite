@@ -5,6 +5,8 @@ https://github.com/Kuadrant/authorino/blob/main/docs/user-guides/caching.md
 
 import pytest
 
+pytestmark = [pytest.mark.authorino]
+
 
 @pytest.fixture(autouse=True)
 def uuid_expectation(request, mockserver, module_label):

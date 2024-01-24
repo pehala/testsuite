@@ -1,4 +1,5 @@
 """Contains capability related classes"""
+
 import functools
 
 from weakget import weakget
@@ -11,8 +12,8 @@ def has_kuadrant():
     """Returns True, if Kuadrant deployment is present and should be used"""
     spokes = weakget(settings)["control_plane"]["spokes"] % {}
 
-    if not settings.get("gateway_api", True):
-        return False, "Gateway API is turned off"
+    if not settings.get("standalone", False):
+        return False, "Standalone mode is enabled"
 
     for name, openshift in spokes.items():
         # Try if Kuadrant is deployed
@@ -24,15 +25,15 @@ def has_kuadrant():
         if len(kuadrants.model["items"]) == 0:
             return False, f"Spoke {name} does not have Kuadrant resource in project {project}"
 
-    return True, ""
+    return True, None
 
 
 @functools.cache
 def is_standalone():
     """Return True, if the testsuite is configured to run with envoy in standalone mode, without Gateway API"""
-    if settings.get("gateway_api", True):
-        return False, "Gateway API is turned on and Kuadrant is enabled"
-    return True
+    if settings.get("standalone", False):
+        return False, "Standalone mode is disabled"
+    return True, None
 
 
 @functools.cache
@@ -40,8 +41,8 @@ def has_mgc():
     """Returns True, if MGC is configured and deployed"""
     spokes = weakget(settings)["control_plane"]["spokes"] % {}
 
-    if not settings.get("gateway_api", True):
-        return False, "Gateway API is turned off"
+    if not settings.get("standalone", False):
+        return False, "Standalone mode is enabled"
 
     if len(spokes) == 0:
         return False, "Spokes are not configured"
@@ -52,4 +53,4 @@ def has_mgc():
 
     if "managedzones" not in hub_openshift.do_action("api-resources", "--api-group=kuadrant.io").out():
         return False, "MGC custom resources are missing on hub cluster"
-    return True, ""
+    return True, None

@@ -38,11 +38,11 @@ def pytest_runtest_setup(item):
     if "performance" in marks and not item.config.getoption("--performance"):
         pytest.skip("Excluding performance tests")
     skip_func = pytest.fail if item.config.getoption("--enforce") else pytest.skip
-    if "kuadrant" in marks:
+    if "kuadrant_only" in marks:
         kuadrant, error = has_kuadrant()
         if not kuadrant:
             skip_func(f"Unable to locate Kuadrant installation: {error}")
-    if "standalone" in marks:
+    if "standalone_only" in marks:
         status, error = is_standalone()
         if not status:
             skip_func(f"Unable to run Standalone tests: {error}")
@@ -232,7 +232,7 @@ def module_label(label):
 @pytest.fixture(scope="module")
 def kuadrant(testconfig, openshift):
     """Returns Kuadrant instance if exists, or None"""
-    if not testconfig.get("gateway_api", True):
+    if not testconfig.get("standalone", False):
         return None
 
     # Try if Kuadrant is deployed

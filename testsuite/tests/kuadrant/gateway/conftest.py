@@ -6,6 +6,9 @@ from testsuite.httpx.auth import HttpxOidcClientAuth
 from testsuite.policy.authorization.auth_policy import AuthPolicy
 
 
+pytestmark = [pytest.mark.kuadrant_only]
+
+
 @pytest.fixture(scope="module")
 def kuadrant(kuadrant):
     """Skip if not running on Kuadrant"""
