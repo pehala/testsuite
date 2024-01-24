@@ -7,6 +7,7 @@ import pytest
 from dynaconf import ValidationError
 from keycloak import KeycloakAuthenticationError
 
+from testsuite.capabilities import has_kuadrant, has_mgc, is_standalone
 from testsuite.certificates import CFSSLClient
 from testsuite.config import settings
 from testsuite.mockserver import Mockserver
@@ -28,7 +29,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--performance", action="store_true", default=False, help="Run also performance tests (default: False)"
     )
-    parser.addoption("--mgc", action="store_true", default=False, help="Run also mgc tests (default: False)")
+    parser.addoption("--enforce", action="store_true", default=False, help="Fails tests instead of skip")
 
 
 def pytest_runtest_setup(item):
@@ -36,8 +37,19 @@ def pytest_runtest_setup(item):
     marks = [i.name for i in item.iter_markers()]
     if "performance" in marks and not item.config.getoption("--performance"):
         pytest.skip("Excluding performance tests")
-    if "mgc" in marks and not item.config.getoption("--mgc"):
-        pytest.skip("Excluding MGC tests")
+    skip_func = pytest.fail if item.config.getoption("--enforce") else pytest.skip
+    if "kuadrant" in marks:
+        kuadrant, error = has_kuadrant()
+        if not kuadrant:
+            skip_func(f"Unable to locate Kuadrant installation: {error}")
+    if "standalone" in marks:
+        status, error = is_standalone()
+        if not status:
+            skip_func(f"Unable to run Standalone tests: {error}")
+    if "mgc" in marks:
+        mgc, error = has_mgc()
+        if not mgc:
+            skip_func(f"Unable to locate MGC installation: {error}")
 
 
 @pytest.hookimpl(hookwrapper=True)

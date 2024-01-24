@@ -43,7 +43,11 @@ line-length = 120
 markers = [
     "issue: Reference to covered issue",
     "performance: Performance tests have unique needs",
-    "mgc: MGC tests have specific needs"
+    "mgc: Test is using MGC specific features",
+    "authorino: Test is using Authorino features",
+    "standalone: Test is using features available only in standalone mode, without Kuadrant",
+    "limitador: Test is using Limitador features",
+    "kuadrant: Test is using Kuadrant specific features",
 ]
 filterwarnings = [
     "ignore: WARNING the new order is not taken into account:UserWarning",
