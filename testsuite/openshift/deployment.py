@@ -149,7 +149,10 @@ class Deployment(OpenShiftObject):
     def wait_for_ready(self, timeout=90):
         """Waits until Deployment is marked as ready"""
         with oc.timeout(timeout):
-            success, _, _ = self.self_selector().until_all(success_func=lambda obj: "readyReplicas" in obj.model.status)
+            success, _, _ = self.self_selector().until_all(
+                success_func=lambda obj: "readyReplicas" in obj.model.status
+                and obj.model.status.replicas == obj.model.status.readyReplicas
+            )
             assert success, f"Deployment {self.name()} did not get ready in time"
 
     @property

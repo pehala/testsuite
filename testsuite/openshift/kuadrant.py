@@ -24,6 +24,6 @@ class KuadrantCR(OpenShiftObject):
 
     @property
     def limitador_deployment(self):
-        """Returns Deployment object for this Authorino"""
+        """Returns Deployment object for Limitador"""
         with self.context:
             return selector(f"deployment/{self.LIMITADOR}").object(cls=Deployment)

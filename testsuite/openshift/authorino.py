@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from openshift_client import selector, timeout
 
 from testsuite.openshift.client import OpenShiftClient
-from testsuite.openshift import OpenShiftObject
+from testsuite.openshift import OpenShiftObject, modify
 from testsuite.lifecycle import LifecycleObject
 from testsuite.utils import asdict
 
@@ -117,6 +117,18 @@ class AuthorinoCR(OpenShiftObject, Authorino):
     def oidc_url(self):
         """Return authorino oidc endpoint"""
         return f"{self.name()}-authorino-oidc.{self.namespace()}.svc.cluster.local"
+
+    @property
+    def tracing(self) -> dict:
+        """Returns tracing config"""
+        return self.model.spec.setdefault("tracing", {})
+
+    @tracing.setter
+    @modify
+    def tracing(self, config: TracingOptions):
+        """Sets tracing"""
+        self.model.spec.setdefault("tracing", {})
+        self.model.spec["tracing"] = asdict(config)
 
 
 class PreexistingAuthorino(Authorino):

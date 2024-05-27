@@ -2,19 +2,33 @@
  all methods are placeholders for now since we do not work with Kuadrant"""
 
 import pytest
+from openshift_client import selector, OpenShiftPythonException
 
+from testsuite.config import settings
+from testsuite.openshift.authorino import AuthorinoCR
 from testsuite.policy.authorization.auth_policy import AuthPolicy
 from testsuite.policy.rate_limit_policy import RateLimitPolicy
 
 
-# pylint: disable=unused-argument
 @pytest.fixture(scope="session")
-def authorino(kuadrant):
+def system_openshift():
+    """Returns client for Kuadrant"""
+    ocp = settings["service_protection"]["project"]
+    project = settings["service_protection"]["system_project"]
+    return ocp.change_project(project)
+
+
+@pytest.fixture(scope="session")
+def authorino(system_openshift) -> AuthorinoCR:
     """Authorino instance when configured through Kuadrant"""
-    if kuadrant:
-        # No available modification
-        return True
-    return None
+    try:
+        with system_openshift.context:
+            authorino = selector("authorino").object(cls=AuthorinoCR)
+            authorino.committed = True
+    except OpenShiftPythonException:
+        pytest.fail("Running Kuadrant tests, but Authorino resource was not found")
+
+    return authorino
 
 
 @pytest.fixture(scope="module")
@@ -24,13 +38,14 @@ def authorization_name(blame):
 
 
 @pytest.fixture(scope="module")
-def authorization(kuadrant, oidc_provider, route, authorization_name, openshift, label):
+def authorization(kuadrant, route, authorization_name, openshift, label):
     """Authorization object (In case of Kuadrant AuthPolicy)"""
     if kuadrant:
         return AuthPolicy.create_instance(openshift, authorization_name, route, labels={"testRun": label})
     return None
 
 
+# pylint: disable=unused-argument
 @pytest.fixture(scope="module")
 def rate_limit(kuadrant, openshift, blame, request, module_label, route, gateway):
     """
