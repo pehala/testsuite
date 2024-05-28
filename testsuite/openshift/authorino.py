@@ -1,6 +1,7 @@
 """Authorino CR object"""
 
 import abc
+import dataclasses
 from typing import Any, Optional, Dict, List
 from dataclasses import dataclass
 
@@ -118,17 +119,19 @@ class AuthorinoCR(OpenShiftObject, Authorino):
         """Return authorino oidc endpoint"""
         return f"{self.name()}-authorino-oidc.{self.namespace()}.svc.cluster.local"
 
-    @property
-    def tracing(self) -> dict:
-        """Returns tracing config"""
-        return self.model.spec.setdefault("tracing", {})
-
-    @tracing.setter
-    @modify
-    def tracing(self, config: TracingOptions):
+    def set_tracing(self, config: TracingOptions):
         """Sets tracing"""
-        self.model.spec.setdefault("tracing", {})
-        self.model.spec["tracing"] = asdict(config)
+        self["tracing"] = asdict(config)
+
+    def __getitem__(self, name):
+        return self.model.spec[name]
+
+    @modify
+    def __setitem__(self, name, value):
+        if dataclasses.is_dataclass(value):
+            self.model.spec[name] = asdict(value)
+        else:
+            self.model.spec[name] = value
 
 
 class PreexistingAuthorino(Authorino):

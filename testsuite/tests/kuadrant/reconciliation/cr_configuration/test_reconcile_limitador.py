@@ -2,6 +2,8 @@
 
 import pytest
 
+from testsuite.openshift.deployment import ContainerResources
+
 pytestmark = [pytest.mark.kuadrant_only]
 
 
@@ -39,7 +41,7 @@ def test_fields_to_reconcile(kuadrant, field, value):
         - assert that `field` in Kuadrant CR Limitador is equal to `value`
         - assert that `field` in Limitador deployment is equal to `value`
     """
-    kuadrant.limitador = {field: value}
+    kuadrant.limitador[field] = value
 
     assert value == kuadrant.limitador[field]
     assert str(value) in str(kuadrant.limitador_deployment.model.spec)
@@ -55,9 +57,14 @@ def test_blank_fields_wont_reconcile(kuadrant):
         - assert replicas field is 3 for limitador deployment
         - assert blank field resourceRequirements is returned to default for limitador deployment
     """
-    kuadrant.limitador = {"replicas": 2, "resourceRequirements": {"requests": {"cpu": "300m", "memory": "40Mi"}}}
+    # kuadrant.limitador = {"replicas": 2, "resourceRequirements": {"requests": {"cpu": "300m", "memory": "40Mi"}}}
+    kuadrant.limitador["replicas"] = 2
+    kuadrant.limitador["resourceRequirements"] = ContainerResources(requests_cpu="300m", requests_memory="40mi")
 
-    kuadrant.limitador = {"replicas": 3}
+    kuadrant.wait_for_ready()
+
+    kuadrant.limitador["replicas"] = 3
+    # kuadrant.limitador = {"replicas": 3}
 
     assert kuadrant.limitador_deployment.model.spec.replicas == 3
     assert "'cpu': '250m', 'memory': '32Mi'" in str(kuadrant.limitador_deployment.model.spec)

@@ -39,7 +39,7 @@ def limitador(system_openshift) -> LimitadorCR:
 @pytest.fixture(scope="module", autouse=True)
 def enable_tracing(authorino, limitador, tracing):
     """Enable tracing for Authorino and Limitador"""
-    authorino.tracing = TracingOptions(tracing.collector_url, insecure=True)
-    limitador.tracing = TracingOptions(tracing.collector_url)
-    limitador.verbosity = 3
+    authorino["tracing"] = TracingOptions(tracing.collector_url, insecure=True)
+    limitador["tracing"] = TracingOptions(tracing.collector_url)
+    limitador["verbosity"] = 3
     limitador.deployment.wait_for_ready()

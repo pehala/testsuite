@@ -1,5 +1,7 @@
 """Limitador CR object"""
 
+import dataclasses
+
 from openshift_client import selector
 
 from testsuite.openshift import OpenShiftObject, modify
@@ -17,26 +19,12 @@ class LimitadorCR(OpenShiftObject):
         with self.context:
             return selector("deployment/limitador-limitador").object(cls=Deployment)
 
-    @property
-    def tracing(self) -> dict:
-        """Returns tracing config"""
-        return self.model.spec.setdefault("tracing", {})
+    def __getitem__(self, name):
+        return self.model.spec[name]
 
-    @tracing.setter
     @modify
-    def tracing(self, config: TracingOptions):
-        """Sets tracing"""
-        self.model.spec.setdefault("tracing", {})
-        self.model.spec["tracing"] = asdict(config)
-
-    @property
-    def verbosity(self) -> int:
-        """Returns verbosity config"""
-        return self.model.spec.setdefault("verbosity", {})
-
-    @verbosity.setter
-    @modify
-    def verbosity(self, level: int):
-        """Sets verbosity"""
-        self.model.spec.setdefault("verbosity", {})
-        self.model.spec["verbosity"] = level
+    def __setitem__(self, name, value):
+        if dataclasses.is_dataclass(value):
+            self.model.spec[name] = asdict(value)
+        else:
+            self.model.spec[name] = value
