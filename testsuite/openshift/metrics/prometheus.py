@@ -7,6 +7,8 @@ import backoff
 from apyproxy import ApyProxy
 
 from testsuite.httpx import KuadrantClient
+from testsuite.lifecycle import LifecycleObject
+from .service_monitor import ServiceMonitor
 
 
 def _params(key: str = "", labels: dict[str, str] = None) -> dict[str, str]:
@@ -41,21 +43,21 @@ class Metrics:
         return [float(m["value"][1]) for m in self.metrics]
 
 
-class Prometheus:
+class Prometheus(LifecycleObject):
     """Interface to the OpenShift Prometheus client"""
 
     def __init__(self, url: str, token: str, namespace: str = None):
         self.token = token
+        self.url = url
         self.headers = {"Authorization": f"Bearer {self.token}"}
         self.namespace = namespace
 
-        self._client = KuadrantClient(headers=self.headers, verify=False)
-        self.client = ApyProxy(url, self._client).api.v1
+        self._client: KuadrantClient = None  # type: ignore
+        self.client: ApyProxy = None  # type: ignore
 
-    def get_targets(self) -> dict:
+    def get_active_targets(self) -> dict:
         """Get active metric targets information"""
-        params = {"state": "active"}
-        response = self.client.targets.get(params=params)
+        response = self.client.targets.get(params={"state": "active"})
 
         return response.json()["data"]["activeTargets"]
 
@@ -70,24 +72,38 @@ class Prometheus:
 
         return Metrics(response.json()["data"]["result"])
 
-    def wait_for_scrape(self, target_service: str, metrics_path: str = "/metrics"):
+    @backoff.on_predicate(backoff.constant, interval=10, jitter=None, max_tries=35)
+    def is_reconciled(self, service_monitor: ServiceMonitor):
+        """True, if all endpoints in ServiceMonitor are active targets"""
+        scrape_pools = set(target["scrapePool"] for target in self.get_active_targets())
+        endpoints = len(service_monitor.model.spec.endpoints)
+        for i in range(endpoints):
+            if f"serviceMonitor/{service_monitor.namespace()}/{service_monitor.name()}/{i}" not in scrape_pools:
+                return False
+
+        return True
+
+    def wait_for_scrape(self, service_monitor: ServiceMonitor, metrics_path: str):
         """Wait before next metrics scrape on service is finished"""
         call_time = datetime.now(timezone.utc)
 
-        @backoff.on_predicate(backoff.constant, interval=10, jitter=None, max_tries=20)
+        @backoff.on_predicate(backoff.constant, interval=10, jitter=None, max_tries=4)
         def _wait_for_scrape():
             """Wait for new scrape after the function call time"""
-            for target in self.get_targets():
+            for target in self.get_active_targets():
                 if (
-                    "service" in target["labels"].keys()
-                    and target["labels"]["service"] == target_service
-                    and target["discoveredLabels"]["__metrics_path__"] == metrics_path
+                    f"serviceMonitor/{service_monitor.namespace()}/{service_monitor.name()}" in target["scrapePool"]
+                    and metrics_path in target["scrapeUrl"]
                 ):
                     return call_time < datetime.fromisoformat(target["lastScrape"][:26]).replace(tzinfo=timezone.utc)
             return False
 
-        assert _wait_for_scrape(), "Prometheus didn't reconcile ServiceMonitor in time"
+        assert _wait_for_scrape(), "Scrape wasn't done in time"
 
-    def close(self):
-        """Close httpx client connection"""
-        self._client.close()
+    def commit(self):
+        self._client = KuadrantClient(headers=self.headers, verify=False)
+        self.client = ApyProxy(self.url, self._client).api.v1
+
+    def delete(self):
+        if self._client is not None:
+            self._client.close()
